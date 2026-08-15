@@ -1243,12 +1243,15 @@ EOF
 #  网络加速统一切换引擎 (替代原来十几个 startxxx 函数)
 # =================================================
 
-# 检测本机是否由 tcpfit (独立网络精调工具) 管理。
-# tcpfit 把自己的 sysctl 写在 /etc/sysctl.d/99-tcpfit.conf，并安装 tc 出向整形
-# (tcpfit-qdisc.service) 与状态目录 /var/lib/tcpfit。任一特征存在即认为其在管理本机。
+# 检测本机是否已被 tcpfit "应用"(真正在管理网络参数)，而非仅仅"装了 tcpfit 这个工具"。
+# 关键区别: /usr/local/bin/tcpfit 只代表命令行工具已安装，用户可能从未 apply 过；
+# 此时不应弹出"tcpfit 正在管理本机"的警告与 YES 确认。已应用的证据是:
+#   - /etc/sysctl.d/99-tcpfit.conf : apply 时写入的 sysctl (最确定的已应用标志)
+#   - tcpfit-qdisc.service         : apply 出向整形时创建的 systemd 单元
+#   - /var/lib/tcpfit              : 运行后产生的状态目录
+# 故此处刻意不再检测裸二进制文件，避免"只装未用"被误判为正在管理。
 tcpfit_present() {
 	[[ -f /etc/sysctl.d/99-tcpfit.conf ]] && return 0
-	[[ -x /usr/local/bin/tcpfit ]] && return 0
 	[[ -d /var/lib/tcpfit ]] && return 0
 	systemctl list-unit-files 2>/dev/null | grep -q '^tcpfit-qdisc\.service' && return 0
 	return 1
