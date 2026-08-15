@@ -17,7 +17,7 @@ debian/ubuntu：apt-get install ca-certificates wget -y && update-ca-certificate
 不卸载内核版本
 
 ```
-wget -O tcpx.sh "https://github.com/ylx2016/Linux-NetSpeed/raw/master/tcpx.sh" && chmod +x tcpx.sh && ./tcpx.sh
+bash <(curl -fsSL https://raw.githubusercontent.com/ylx2016/Linux-NetSpeed/master/tcpx.sh)
 ```
 
 提示：设置BBR和优化已经分开，需要各走一遍。即20和32都需要运行一遍，不分先后。 AWS修好了
