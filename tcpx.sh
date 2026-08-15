@@ -6,7 +6,7 @@ export PATH
 # =================================================
 #  全局配置区 (Configuration as Data)
 # =================================================
-readonly SH_VER="100.0.6.7"
+readonly SH_VER="100.0.6.8"
 readonly GITHUB_RAW_URL="https://raw.githubusercontent.com/ylx2016/Linux-NetSpeed/master"
 readonly CLOUD_STATE_FILE="/etc/tcpx_cloud_lastver" # installcloud 记忆上次探测到的最高可安装 Cloud 内核
 
@@ -1289,6 +1289,15 @@ maybe_offer_disable_tcpfit_shaper() {
 	fi
 }
 
+# 启用 LotSpeed 时无条件停用 tcpfit 出向整形 (按用户要求不再询问)。
+# tcpfit-qdisc.service 对网卡出向限速/整形，会直接盖过 LotSpeed 的实际吞吐。
+disable_tcpfit_shaper_force() {
+	tcpfit_shaper_active || return 0
+	systemctl disable --now tcpfit-qdisc.service >/dev/null 2>&1
+	echo -e "${INFO} 已自动停用 tcpfit 出向整形 (tcpfit-qdisc.service)，以便 LotSpeed 全速生效。"
+	echo -e "${TIP} 如需恢复: systemctl enable --now tcpfit-qdisc.service，或重新运行 tcpfit。"
+}
+
 # 卸载加速器 (清理配置)
 remove_bbr_lotserver() {
 	echo -e "${INFO} 正在清理旧的拥塞控制与队列算法配置..."
@@ -1729,7 +1738,7 @@ install_lotspeed() {
 		sysctl --system >/dev/null 2>&1
 		echo -e "${INFO} LotSpeed 已设置为默认拥塞控制算法！"
 		setup_lotspeed_boot_service
-		maybe_offer_disable_tcpfit_shaper
+		disable_tcpfit_shaper_force
 	else
 		echo -e "${ERROR} LotSpeed 模块加载失败，请检查上方编译日志（通常是因为内核 Headers 缺失或版本过低）。"
 	fi
@@ -1743,7 +1752,7 @@ enable_lotspeed_standalone() {
 		return
 	fi
 	remove_bbr_lotserver
-	maybe_offer_disable_tcpfit_shaper
+	disable_tcpfit_shaper_force
 	echo -e "${INFO} 正在启动 LotSpeed 加速..."
 	lotspeed start >/dev/null 2>&1
 
